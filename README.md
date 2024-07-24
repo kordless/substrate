@@ -7,9 +7,12 @@ To begin using this project, you'll need to obtain an API key from Substrate. Fo
 1. **Visit the Substrate API**: Navigate to the following URL to retrieve your API key:
    - [https://substrate.run](https://substrate.run)
 
-2. **Input Your API Key**: Once you have your API key, you can input it into the application during startup when prompted.
+2. Do a `pip install substrate`
 
-3. Do a `pip install substrate`
+3. Run the program with `python main.py`
+   
+4. **Input Your API Key**: Once you have your API key, you can input it into the application during startup when prompted.
+
 
 ## Running the Code
 
