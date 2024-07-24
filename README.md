@@ -2,6 +2,8 @@
 
 This example application writes code with `Mixtral8x7BInstruct` and executes it with the `RunPython` function from [Substrate](https://substrate.app).
 
+Docs for Substrate are here: [https://docs.substrate.run/](https://docs.substrate.run/)
+
 ## Getting Started
 
 To begin using this project, you'll need to obtain an API key from Substrate. Follow these steps to get started:
