@@ -2,6 +2,8 @@ import requests
 from bs4 import BeautifulSoup
 from markdownify import markdownify as md
 
+pip_install_strings = ["markdownify", "bs4"]
+
 def substrate_function(func):
     func.is_substrate_function = True
     return func
