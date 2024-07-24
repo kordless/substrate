@@ -8,14 +8,16 @@ Docs for Substrate are here: [https://docs.substrate.run/](https://docs.substrat
 
 To begin using this project, you'll need to obtain an API key from Substrate. Follow these steps to get started:
 
+1. Clone the repo: `git clone https://github.com/kordless/substrate_inception.git`
+   
 1. **Visit the Substrate API**: Navigate to the following URL to retrieve your API key:
    - [https://substrate.run](https://substrate.run)
 
-2. Do a `pip install substrate`
+1. Do a `pip install substrate`
 
-3. Run the program with `python main.py`
+1. Run the program with `python main.py`
    
-4. **Input Your API Key**: Once you have your API key, you can input it into the application during startup when prompted.
+1. **Input Your API Key**: Once you have your API key, you can input it into the application during startup when prompted.
 
 
 ## Running the Code
