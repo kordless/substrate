@@ -1,6 +1,6 @@
 # Substrate Write and Run Python Example
 
-This example application writes code with `Mixtral8x7BInstruct` and executes it with the `RunPyhton` function from [Substrate](https://substrate.app).
+This example application writes code with `Mixtral8x7BInstruct` and executes it with the `RunPython` function from [Substrate](https://substrate.app).
 
 ## Getting Started
 
