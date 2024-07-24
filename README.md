@@ -5,7 +5,7 @@
 To begin using this project, you'll need to obtain an API key from Substrate. Follow these steps to get started:
 
 1. **Visit the Substrate API**: Navigate to the following URL to retrieve your API key:
-   - `https://substrate.run`
+   - [https://substrate.run](https://substrate.run)
 
 2. **Input Your API Key**: Once you have your API key, you can input it into the application during startup when prompted.
 
