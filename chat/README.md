@@ -20,6 +20,10 @@ To begin using this project, you'll need to obtain an API key from Substrate. Fo
 
 This script initializes and runs a chat session using the Llama3Instruct70B model. It includes functionalities like loading a configuration file, generating unique usernames, handling user input, and querying the Llama3 model.
 
+#### Vector Store
+
+This application uses a vector store to efficiently manage and query vector representations of data. This functionality enhances the capabilities of the chat application by allowing it to perform rapid similarity searches and other vector-based operations.
+
 ### nomemory8b.py
 
 This script is similar to `memory70B.py` but uses the Llama3Instruct8B model instead. It also includes functionalities like loading a configuration file, generating unique usernames, handling user input, and querying the Llama3 model.
