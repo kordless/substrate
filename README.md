@@ -1,62 +1,70 @@
-# Substrate Write and Run Python Example
+# Welcome to the Substrate Example Repository
 
-This example application writes code with `Mixtral8x7BInstruct` and executes it with the `RunPython` function from [Substrate](https://substrate.app).
-
-Docs for Substrate are here: [https://docs.substrate.run/](https://docs.substrate.run/)
+This repository demonstrates how to use the Substrate API with two examples. You can learn how to write and execute Python functions dynamically using different models provided by Substrate. Follow the steps below to get started.
 
 ## Getting Started
 
-To begin using this project, you'll need to obtain an API key from Substrate. Follow these steps to get started:
+Before you begin, you'll need to sign up and obtain an API key from Substrate. Visit [Substrate's website](https://substrate.run) to sign up and retrieve your API key.
 
-1. Clone the repo: `git clone https://github.com/kordless/substrate_inception.git`
+## Examples
+
+### 1. Inception Example
+
+Navigate to the `inception` directory to explore the Inception example, which demonstrates writing and running Python functions.
+
+**Steps to Run the Inception Example:**
+
+1. Clone the repository:
+   ```
+   git clone <repo_url>
+   ```
+2. Navigate to the inception directory:
+   ```
+   cd inception
+   ```
+3. Install the required dependencies:
+   ```
+   pip install substrate
+   ```
+4. Run the program:
+   ```
+   python main.py
+   ```
+5. Input your API key when prompted.
+
+### 2. Chat Example
+
+Navigate to the `chat` directory to explore the chat example, which showcases a simple chat application using the Llama3Instruct models.
+
+**Steps to Run the Chat Example:**
+
+1. Clone the repository (if not already done):
+   ```
+   git clone <repo_url>
+   ```
+2. Navigate to the chat directory:
+   ```
+   cd chat
+   ```
+3. Install the required dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+4. Run the application:
+   ```
+   python memory70B.py
+   ```
    
-1. **Visit the Substrate API**: Navigate to the following URL to retrieve your API key:
-   - [https://substrate.run](https://substrate.run)
-
-1. Do a `pip install substrate`
-
-1. Run the program with `python main.py`
+   or
    
-1. **Input Your API Key**: Once you have your API key, you can input it into the application during startup when prompted.
+   ```
+   python nomemory8b.py
+   ```
+5. Input your API key when prompted.
 
+## Additional Information
 
-## Running the Code
+- For more details, refer to the respective `README.md` files in the `inception` and `chat` directories.
+- Visit [Substrate's documentation](https://docs.substrate.run/) for further guidance.
 
-This project allows you to write and execute Python functions dynamically using the Substrate API. Here’s how it works:
-
-1. **Function Creation**: You can create new functions by providing a description of what the function should do. The application will write the code for you.
-
-2. **Executing Functions**: After defining the functions, you can run them directly from the command line interface. The application will prompt you to select which function to run.
-
-### Example Usage
-- To create a function, enter a description in the prompt when asked. The application will handle the rest, including writing the code and ensuring it runs without errors. 
-- After the function is created, you will see an option to run it; simply follow the prompt to input any needed parameters.
-
-### Interaction Example
-```
-python main.py
-```
-
-```
-Do you want me write a function? (y/n): y
-Describe the function to write: This function should calculate the Body Mass Index (BMI) of a person. It should take two parameters: weight in kilograms and height in meters. The function should return the calculated BMI value rounded to one decimal place.
-Code:
-def calculate_bmi(weight, height):
-    return round(weight / (height ** 2), 1)
-
-# Example usage:
-calculate_bmi(70, 1.75)
-Arguments: ["weight", "height"]
-Pip install strings: []
-Function name: calculate_bmi
-Syntax validation passed: No syntax errors found.
-Available functions:
-1. calculate_bmi.calculate_bmi
-2. fib_sequence.fib_sequence
-3. markdown.markdown
-Enter the number of the function you want to run: 1
-You selected: calculate_bmi.calculate_bmi
-Enter value for 'weight': 200
-Enter value for 'height': 2
-50.0
-```
+Happy coding!

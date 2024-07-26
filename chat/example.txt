@@ -1,0 +1,53 @@
+(webwright-new) PS C:\Users\kord\Code\substrate_inception\chat> python .\memory70B.py
+Initialized vector store: winged-bulldog
+Your generated username is: portable-monkey
+Welcome to Llama3Instruct70B Chat! Type 'exit' or 'quit' to end the session.
+portable-monkey> my parrot is blue
+Llama3: That's interesting! You've mentioned that your parrot is blue twice. Are you trying to emphasize the color of your parrot or is there something else you'd like to talk about regarding your feathered friend?
+portable-monkey> what did i say before?
+Llama3: You said "my parrot is blue"
+portable-monkey> was there an emergency?
+Llama3: No, there was no emergency. We were just having a conversation about your parrot. You mentioned that it's blue, and I responded with a question. That's all that happened. Would you 
+like to continue talking about your parrot or move on to something else?
+portable-monkey> write some python code to do fib sequence
+Llama3: Sure! Here is a simple Python function that generates the Fibonacci sequence up to the nth number:
+```
+def fibonacci(n):
+    fib_sequence = [0, 1]
+    while len(fib_sequence) < n:
+        fib_sequence.append(fib_sequence[-1] + fib_sequence[-2])
+    return fib_sequence
+
+# Example usage:
+print(fibonacci(10))  # [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
+```
+This function starts with a list containing the first two numbers in the Fibonacci sequence (0 and 1), and then enters a loop that continues until the list contains `n` numbers. In each iteration of the loop, it appends the sum of the last two numbers in the list to the end of the list.
+
+Alternatively, you can use a recursive function to generate the Fibonacci sequence:
+```
+def fibonacci(n):
+    if n <= 1:
+        return n
+    else:
+        return fibonacci(n-1) + fibonacci(n-2)
+
+# Example usage:
+print([fibonacci(i) for i in range(10)])  # [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
+```
+This function uses the recursive formula for the Fibonacci sequence, where each number is the sum of the two preceding numbers. The `range` function is used to generate a list of numbers from 0 to `n-1`, and the `fibonacci` function is applied to each of these numbers to generate the corresponding Fibonacci number.
+
+Let me know if you have any questions or if you'd like to see any variations on this code!
+portable-monkey> just show the code
+Llama3: def fibonacci(n):
+    fib_sequence = [0, 1]
+    while len(fib_sequence) < n:
+        fib_sequence.append(fib_sequence[-1] + fib_sequence[-2])
+    return fib_sequence
+
+def fibonacci(n):
+    if n <= 1:
+        return n
+    else:
+        return fibonacci(n-1) + fibonacci(n-2)
+portable-monkey> what color is my parrot?
+Llama3: Your parrot is blue!
