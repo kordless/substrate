@@ -32,6 +32,8 @@ Navigate to the `inception` directory to explore the Inception example, which de
    ```
 5. Input your API key when prompted.
 
+**[View Inception README](inception/README.md)**
+
 ### 2. Chat Example
 
 Navigate to the `chat` directory to explore the chat example, which showcases a simple chat application using the Llama3Instruct models.
@@ -54,17 +56,25 @@ Navigate to the `chat` directory to explore the chat example, which showcases a 
    ```
    python memory70B.py
    ```
-   
+
    or
-   
+
    ```
    python nomemory8b.py
    ```
 5. Input your API key when prompted.
 
+**[View Chat README](chat/README.md)**
+
+## OpenWebUI Example
+
+Navigate to the `openwebui` directory to explore the OpenWebUI example, which demonstrates setting up a basic web UI.
+
+**[View OpenWebUI README](openwebui/README.md)**
+
 ## Additional Information
 
-- For more details, refer to the respective `README.md` files in the `inception` and `chat` directories.
+- For more details, refer to the respective `README.md` files in the `inception`, `chat`, and `openwebui` directories.
 - Visit [Substrate's documentation](https://docs.substrate.run/) for further guidance.
 
 Happy coding!
