@@ -44,6 +44,14 @@ Click the refresh button to the far right to load the models, which are proxied 
 
 Click on New Chat to select a model and chat with it.
 
+## Video Tutorial
+
+For a detailed walkthrough of setting up and using the Substrate Proxy for Open WebUI, check out our tutorial video:
+
+[![Substrate Proxy for Open WebUI Tutorial](https://img.youtube.com/vi/JptVk1Aej64/0.jpg)](https://www.youtube.com/watch?v=JptVk1Aej64)
+
+[Watch the Tutorial Video](https://www.youtube.com/watch?v=JptVk1Aej64)
+
 ## Notes
 
 - This project is in its early stages and may contain bugs or unfinished features.
