@@ -287,7 +287,7 @@ async def main():
             context = build_context(recent_history)
 
             llama3_query = Llama3Instruct70B(
-                prompt=f"Context:\n{context}\n\nHuman: {user_input}\n\nAssistant:",
+                prompt=f"{context}\n\nAssistant:",
                 num_choices=1,
                 temperature=0.4,
                 max_tokens=800,
