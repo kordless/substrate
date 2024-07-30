@@ -3,7 +3,7 @@ import json
 import logging
 from datetime import datetime
 from quart import Quart, request, jsonify, Response
-from substrate import Substrate, Llama3Instruct70B
+from substrate import Substrate, Llama3Instruct70B, Mistral7BInstruct, Mixtral8x7BInstruct, Llama3Instruct8B
 
 # Set up logging
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -46,9 +46,7 @@ substrate = Substrate(api_key=api_key, timeout=60 * 5)
 
 # List of valid models with estimated parameter sizes
 valid_models = {
-    "Mistral7BInstruct": "7B",
     "Mixtral8x7BInstruct": "56B",  # 8 x 7B
-    "Llama3Instruct8B": "8B",
     "Llama3Instruct70B": "70B"
 }
 
@@ -93,19 +91,19 @@ async def chat():
         prompt = '\n'.join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in messages if 'content' in msg])
 
         if model == "Mistral7BInstruct":
-            query = Llama3Instruct70B(
+            query = Mistral7BInstruct(
                 prompt=prompt,
                 temperature=temperature,
                 max_tokens=max_tokens
             )
         elif model == "Mixtral8x7BInstruct":
-            query = Llama3Instruct70B(
+            query = Mixtral8x7BInstruct(
                 prompt=prompt,
                 temperature=temperature,
                 max_tokens=max_tokens
             )
         elif model == "Llama3Instruct8B":
-            query = Llama3Instruct70B(
+            query = Llama3Instruct8B(
                 prompt=prompt,
                 temperature=temperature,
                 max_tokens=max_tokens
