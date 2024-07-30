@@ -3,7 +3,8 @@ import json
 import logging
 from datetime import datetime
 from quart import Quart, request, jsonify, Response
-from substrate import Substrate, Llama3Instruct70B, Mistral7BInstruct, Mixtral8x7BInstruct, Llama3Instruct8B
+from quart.helpers import stream_with_context
+from substrate import Substrate, MultiComputeText
 
 # Set up logging
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -47,7 +48,9 @@ substrate = Substrate(api_key=api_key, timeout=60 * 5)
 # List of valid models with estimated parameter sizes
 valid_models = {
     "Mixtral8x7BInstruct": "56B",  # 8 x 7B
-    "Llama3Instruct70B": "70B"
+    "Llama3Instruct70B": "70B",
+    "Llama3Instruct8B": "8B",
+    "Mistral7BInstruct": "7B"
 }
 
 @app.route('/api/chat', methods=['POST'])
@@ -90,50 +93,62 @@ async def chat():
         # Concatenate messages into a single prompt
         prompt = '\n'.join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in messages if 'content' in msg])
 
-        if model == "Mistral7BInstruct":
-            query = Mistral7BInstruct(
-                prompt=prompt,
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
-        elif model == "Mixtral8x7BInstruct":
-            query = Mixtral8x7BInstruct(
-                prompt=prompt,
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
-        elif model == "Llama3Instruct8B":
-            query = Llama3Instruct8B(
-                prompt=prompt,
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
-        elif model == "Llama3Instruct70B":
-            query = Llama3Instruct70B(
-                prompt=prompt,
-                temperature=temperature,
-                max_tokens=max_tokens
-            )
-            
+        # Initialize the appropriate model query
+        query = MultiComputeText(
+            prompt=prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            num_choices=1,
+            model=model
+        )
+
+        @stream_with_context
         async def sse_stream():
             start_time = datetime.utcnow()
             response = await substrate.async_stream(query)
+            has_yielded = False
+            accumulated_text = ""
+
             async for event in response.async_iter():
                 event_data = event.data  # Already a dictionary
 
                 if event_data['object'] == 'node.delta':
-                    created_at = datetime.utcnow().isoformat() + 'Z'
                     text = event_data['data']['choices']['item']['text']
-                    sse_data = json.dumps({
-                        'model': f'Substrate:{model}',
-                        'created_at': created_at,
-                        'message': {
-                            'role': 'assistant',
-                            'content': text
-                        },
-                        'done': False
-                    })
-                    yield f"{sse_data}\n"
+                elif event_data['object'] == 'graph.result':
+                    # Assuming the model name is the first key in the 'data' dict
+                    model_key = next(iter(event_data['data']))
+                    text = event_data['data'][model_key]['choices'][0]['text']
+                else:
+                    continue  # Skip unknown object types
+
+                accumulated_text += text
+                created_at = datetime.utcnow().isoformat() + 'Z'
+                sse_data = json.dumps({
+                    'model': f'Substrate:{model}',
+                    'created_at': created_at,
+                    'message': {
+                        'role': 'assistant',
+                        'content': text
+                    },
+                    'done': False
+                })
+                yield f"{sse_data}\n\n"
+                has_yielded = True
+
+            # Check if we haven't yielded anything yet but have accumulated text
+            if not has_yielded and accumulated_text:
+                created_at = datetime.utcnow().isoformat() + 'Z'
+                sse_data = json.dumps({
+                    'model': f'Substrate:{model}',
+                    'created_at': created_at,
+                    'message': {
+                        'role': 'assistant',
+                        'content': accumulated_text
+                    },
+                    'done': False
+                })
+                yield f"{sse_data}\n\n"
+
             # Final done message with additional data
             end_time = datetime.utcnow()
             total_duration = (end_time - start_time).total_seconds() * 1e9  # Convert to nanoseconds
@@ -153,20 +168,18 @@ async def chat():
                 'eval_count': 341,  # Example value
                 'eval_duration': 10140732000  # Example value
             })
-            yield f"{done_data}\n"
+            yield f"{done_data}\n\n"
 
         if stream:
-            return Response(sse_stream(), content_type='application/json')
+            return Response(sse_stream(), mimetype='text/event-stream')
         else:
-            result = []
-            async for event in sse_stream():
-                result.append(json.loads(event))  # Extract the JSON data
-            return jsonify(result)
+            # Handle non-streaming case (if needed)
+            # This is a placeholder and should be implemented based on your requirements
+            return jsonify({'error': 'Non-streaming requests are not implemented'}), 501
 
     except Exception as e:
         logging.error(f"Error in chat endpoint: {str(e)}")
         return jsonify({'error': 'Internal Server Error'}), 500
-
 
 @app.route('/api/tags', methods=['GET'])
 async def list_local_models():
