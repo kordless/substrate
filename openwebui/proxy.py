@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from quart import Quart, request, jsonify, Response
 from quart.helpers import stream_with_context
-from substrate import Substrate, MultiComputeText
+from substrate import Substrate, ComputeText, MultiComputeText
 
 # Set up logging
 logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -50,7 +50,8 @@ valid_models = {
     "Mixtral8x7BInstruct": "56B",  # 8 x 7B
     "Llama3Instruct70B": "70B",
     "Llama3Instruct8B": "8B",
-    "Mistral7BInstruct": "7B"
+    "Mistral7BInstruct": "7B",
+    "Llama3Instruct405B": "405B"
 }
 
 @app.route('/api/chat', methods=['POST'])
