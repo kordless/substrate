@@ -1,4 +1,2 @@
 quart
-fastapi
-uvicorn
 substrate

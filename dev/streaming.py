@@ -47,8 +47,8 @@ async def amain():
 
         # Define the query using Llama3Instruct70B
         query = Llama3Instruct70B(
-            prompt="Who is Don Quixote?",
-            num_choices=2,
+            prompt="write some python to print a fib sequence",
+            num_choices=1,
             temperature=0.4,
             max_tokens=800
         )

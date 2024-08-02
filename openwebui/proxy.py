@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import time
 from datetime import datetime
 from quart import Quart, request, jsonify, Response
 from quart.helpers import stream_with_context
@@ -45,17 +46,87 @@ if not api_key:
 
 substrate = Substrate(api_key=api_key, timeout=60 * 5)
 
-# List of valid models with estimated parameter sizes
+# List of valid models with estimated parameter sizes and streaming support
 valid_models = {
-    "Mixtral8x7BInstruct": "56B",  # 8 x 7B
-    "Llama3Instruct70B": "70B",
-    "Llama3Instruct8B": "8B",
-    "Mistral7BInstruct": "7B",
-    "Llama3Instruct405B": "405B"
+    "Mixtral8x7BInstruct": {"parameter_size": "56B", "stream": True},
+    "Llama3Instruct70B": {"parameter_size": "70B", "stream": True},
+    "Llama3Instruct8B": {"parameter_size": "8B", "stream": True},
+    "Mistral7BInstruct": {"parameter_size": "7B", "stream": True},
+    "Llama3Instruct405B": {"parameter_size": "405B", "stream": True},
+    "gpt-4o": {"parameter_size": "200B", "stream": False},
+    "gpt-4o-mini": {"parameter_size": "70B", "stream": False},
+    "claude-3-5-sonnet-20240620": {"parameter_size": "2T", "stream": False}
 }
 
 @app.route('/api/chat', methods=['POST'])
 async def chat():
+    @stream_with_context
+    async def sse_stream(query, model):
+        logging.debug("Entering sse_stream generator")
+        start_time = datetime.utcnow()
+        try:
+            response = await substrate.async_stream(query)
+            logging.debug("Received response from substrate.async_stream")
+        except Exception as e:
+            logging.error(f"Error in substrate.async_stream: {str(e)}", exc_info=True)
+            yield json.dumps({'error': 'Internal Server Error'}) + '\n'
+            return
+
+        accumulated_text = ""
+
+        try:
+            async for event in response.async_iter():
+                logging.debug(f"Received event: {event}")
+                
+                if hasattr(event, 'data'):
+                    event_data = event.data  # event.data is already a dictionary
+                    logging.debug(f"Event data: {event_data}")
+
+                    if event_data['object'] == 'node.delta':
+                        text = event_data['data']['text']
+                        accumulated_text += text
+                        created_at = datetime.utcnow().isoformat() + 'Z'
+                        sse_data = json.dumps({
+                            'model': f'Substrate:{model}',
+                            'created_at': created_at,
+                            'message': {
+                                'role': 'assistant',
+                                'content': text
+                            },
+                            'done': False
+                        })
+                        logging.debug(f"Sending SSE data: {sse_data}")
+                        yield f"{sse_data}\n"
+                    elif event_data['object'] == 'graph.result':
+                        # Final message
+                        end_time = datetime.utcnow()
+                        total_duration = (end_time - start_time).total_seconds() * 1e9  # Convert to nanoseconds
+                        done_data = json.dumps({
+                            'model': f'Substrate:{model}',
+                            'created_at': end_time.isoformat() + 'Z',
+                            'message': {
+                                'role': 'assistant',
+                                'content': ''  # Empty content for final message, as per Ollama format
+                            },
+                            'done_reason': 'stop',
+                            'done': True,
+                            'total_duration': int(total_duration),
+                            'load_duration': 2986624900,  # Example value
+                            'prompt_eval_count': 16,  # Example value
+                            'prompt_eval_duration': 63076000,  # Example value
+                            'eval_count': 341,  # Example value
+                            'eval_duration': 10140732000  # Example value
+                        })
+                        logging.debug(f"Sending final SSE data: {done_data}")
+                        yield f"{done_data}\n"
+                else:
+                    logging.warning(f"Received unexpected event: {event}")
+        except Exception as e:
+            logging.error(f"Error in sse_stream generator: {str(e)}", exc_info=True)
+            yield json.dumps({'error': 'Stream processing error'}) + '\n'
+
+        logging.debug("Exiting sse_stream generator")
+
     logging.debug("Entering chat endpoint")
     try:
         headers = request.headers
@@ -98,6 +169,15 @@ async def chat():
             logging.error("No messages provided")
             return jsonify({'error': 'No messages provided'}), 400
 
+        # Check if streaming is supported for the model
+        model_info = valid_models[model]
+        supports_streaming = model_info['stream']
+
+        # If streaming is requested but not supported, set stream to False
+        if stream and not supports_streaming:
+            logging.warning(f"Streaming not supported for model {model}. Falling back to non-streaming request.")
+            stream = False
+
         # Concatenate messages into a single prompt
         prompt = '\n'.join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in messages if 'content' in msg])
         logging.debug(f"Generated prompt: {prompt}")
@@ -112,83 +192,88 @@ async def chat():
         )
         logging.debug(f"Created ComputeText query: {query}")
 
-        @stream_with_context
-        async def sse_stream():
-            logging.debug("Entering sse_stream generator")
-            start_time = datetime.utcnow()
-            try:
-                response = await substrate.async_stream(query)
-                logging.debug("Received response from substrate.async_stream")
-            except Exception as e:
-                logging.error(f"Error in substrate.async_stream: {str(e)}", exc_info=True)
-                yield json.dumps({'error': 'Internal Server Error'}) + '\n'
-                return
-
-            accumulated_text = ""
-
-            try:
-                async for event in response.async_iter():
-                    logging.debug(f"Received event: {event}")
-                    
-                    if hasattr(event, 'data'):
-                        event_data = event.data  # event.data is already a dictionary
-                        logging.debug(f"Event data: {event_data}")
-
-                        if event_data['object'] == 'node.delta':
-                            text = event_data['data']['text']
-                            accumulated_text += text
-                            created_at = datetime.utcnow().isoformat() + 'Z'
-                            sse_data = json.dumps({
-                                'model': f'Substrate:{model}',
-                                'created_at': created_at,
-                                'message': {
-                                    'role': 'assistant',
-                                    'content': text
-                                },
-                                'done': False
-                            })
-                            logging.debug(f"Sending SSE data: {sse_data}")
-                            yield f"{sse_data}\n"
-                        elif event_data['object'] == 'graph.result':
-                            # Final message
-                            end_time = datetime.utcnow()
-                            total_duration = (end_time - start_time).total_seconds() * 1e9  # Convert to nanoseconds
-                            done_data = json.dumps({
-                                'model': f'Substrate:{model}',
-                                'created_at': end_time.isoformat() + 'Z',
-                                'message': {
-                                    'role': 'assistant',
-                                    'content': ''  # Empty content for final message, as per Ollama format
-                                },
-                                'done_reason': 'stop',
-                                'done': True,
-                                'total_duration': int(total_duration),
-                                'load_duration': 2986624900,  # Example value
-                                'prompt_eval_count': 16,  # Example value
-                                'prompt_eval_duration': 63076000,  # Example value
-                                'eval_count': 341,  # Example value
-                                'eval_duration': 10140732000  # Example value
-                            })
-                            logging.debug(f"Sending final SSE data: {done_data}")
-                            yield f"{done_data}\n"
-                    else:
-                        logging.warning(f"Received unexpected event: {event}")
-            except Exception as e:
-                logging.error(f"Error in sse_stream generator: {str(e)}", exc_info=True)
-                yield json.dumps({'error': 'Stream processing error'}) + '\n'
-
-            logging.debug("Exiting sse_stream generator")
-
         if stream:
             logging.info("Starting streaming response")
-            return Response(sse_stream(), mimetype='text/event-stream')
+            return Response(sse_stream(query, model), mimetype='application/x-ndjson')
         else:
-            logging.warning("Non-streaming request received, not implemented")
-            return jsonify({'error': 'Non-streaming requests are not implemented'}), 501
+            logging.info("Starting non-streaming response")
+            return await non_streaming_response(query, model)
 
     except Exception as e:
         logging.error(f"Error in chat endpoint: {str(e)}", exc_info=True)
         return jsonify({'error': 'Internal Server Error'}), 500
+
+async def non_streaming_response(query, model):
+    try:
+        start_time = time.time()
+        response = await substrate.async_run(query)
+        end_time = time.time()
+        
+        logging.debug(f"Raw response from Substrate API: {response}")
+        
+        if hasattr(response, 'api_response'):
+            api_response = response.api_response
+            logging.debug(f"API Response type: {type(api_response)}")
+            logging.debug(f"API Response attributes: {dir(api_response)}")
+            
+            if hasattr(api_response, 'json') and isinstance(api_response.json, dict):
+                content = api_response.json
+                logging.debug(f"JSON content: {content}")
+            else:
+                logging.error(f"Unable to find JSON content in api_response: {api_response}")
+                return jsonify({'error': 'No JSON content found in API response'}), 500
+
+            # Extract text from content
+            if isinstance(content, dict):
+                data = content.get('data', {})
+                if data:
+                    first_key = next(iter(data))
+                    text = data[first_key].get('text')
+                else:
+                    text = None
+            else:
+                logging.error(f"Unexpected content type: {type(content)}")
+                return jsonify({'error': 'Unexpected content type in API response'}), 500
+
+        if text is None:
+            logging.error(f"No text content found in response: {content}")
+            return jsonify({'error': 'No text content found in API response'}), 500
+
+        # Calculate durations
+        total_duration = int((end_time - start_time) * 1e9)  # Convert to nanoseconds
+        
+        # Create Ollama-compatible response
+        result = {
+            "model": f"Substrate:{model}",
+            "created_at": datetime.utcnow().isoformat() + 'Z',
+            "message": {
+                "role": "assistant",
+                "content": text
+            },
+            "done": True,
+            "total_duration": total_duration,
+            "load_duration": 0,
+            "prompt_eval_count": 0,
+            "prompt_eval_duration": 0,
+            "eval_count": 0,
+            "eval_duration": 0,
+            "done_reason": "stop"
+        }
+        
+        logging.debug(f"Formatted result: {result}")
+        
+        # Return the result as a single JSON object with the correct Content-Type
+        return Response(json.dumps(result) + '\n', 
+                        mimetype='application/x-ndjson')
+
+    except Exception as e:
+        logging.error(f"Error in non-streaming response: {str(e)}", exc_info=True)
+        error_response = {
+            "error": "Internal Server Error",
+            "done": True
+        }
+        return Response(json.dumps(error_response) + '\n', 
+                        mimetype='application/x-ndjson')
     
 @app.route('/api/tags', methods=['GET'])
 async def list_local_models():
@@ -205,16 +290,15 @@ async def list_local_models():
                     "format": "gguf",
                     "family": "llama",
                     "families": ["llama"],
-                    "parameter_size": parameter_size,
+                    "parameter_size": info["parameter_size"],
                     "quantization_level": "Q4_0"
                 }
-            } for model, parameter_size in valid_models.items()
+            } for model, info in valid_models.items()
         ]
         return jsonify({"models": models})
     except Exception as e:
         logging.error(f"Error in list_local_models endpoint: {str(e)}")
         return jsonify({'error': 'Internal Server Error'}), 500
-
 
 @app.route('/api/version', methods=['GET'])
 async def get_version():
@@ -226,7 +310,6 @@ async def get_version():
     except Exception as e:
         logging.error(f"Error in get_version endpoint: {str(e)}")
         return jsonify({'error': 'Internal Server Error'}), 500
-
 
 if __name__ == '__main__':
     app.run(port=11435)

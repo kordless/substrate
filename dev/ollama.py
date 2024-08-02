@@ -1,7 +1,7 @@
 import json
 import requests
 
-def ollama_chat_raw(prompt):
+def ollama_chat_result(prompt):
     url = "http://localhost:11434/api/chat"
     payload = {
         "model": "llama3.1",  # You can change this to any model you have in Ollama
@@ -12,20 +12,20 @@ def ollama_chat_raw(prompt):
     response = requests.post(url, json=payload, stream=True)
     response.raise_for_status()
 
-    print("Raw Ollama Output:")
+    full_response = ""
     for line in response.iter_lines():
         if line:
-            print(line.decode('utf-8'))
-            
-            # Pretty print the JSON for better readability
+            decoded_line = line.decode('utf-8')
             try:
-                parsed = json.loads(line)
-                print(json.dumps(parsed, indent=2))
-                print("-" * 50)
+                parsed = json.loads(decoded_line)
+                if 'message' in parsed:
+                    full_response += parsed['message']['content']
             except json.JSONDecodeError:
-                print("Failed to parse JSON:", line.decode('utf-8'))
+                print("Failed to parse JSON:", decoded_line)
+
+    print(full_response)
 
 if __name__ == "__main__":
-    prompt = "What is the capital of France?"
+    prompt = "Write some python for a fib sequence"
     print(f"Sending prompt: '{prompt}'\n")
-    ollama_chat_raw(prompt)
+    ollama_chat_result(prompt)
