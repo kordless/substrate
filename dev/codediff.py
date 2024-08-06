@@ -187,6 +187,7 @@ def run_comparison(is_retry=False, compute_texts=None, reasoning=None, prompt=No
 
     logging.info("Run completed successfully.")
     
+    logging.info(res.get(answer).text)
     # New ComputeText for generating the entire updated file
     full_file_output = ComputeText(
         prompt=sb.concat(
