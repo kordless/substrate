@@ -15,23 +15,26 @@ def test_playwright(url: str):
     start_time = time.time()
     
     # Install Playwright browser binaries using subprocess
-    subprocess.run(["playwright", "install-deps"], check=True)
-    subprocess.run(["playwright", "install", "chromium"], check=True)
+    # Suppress the output of installing dependencies
+    subprocess.run(["playwright", "install-deps"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    
+    # Suppress the output of installing Chromium
+    subprocess.run(["playwright", "install", "chromium"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
     # return("worked")
     # Record the end time after installation
     end_time = time.time()
-    return("huh, getting the error before this")
+    # return("works?")
     installation_time = end_time - start_time
-
-    return("doesn't work either")
 
     stdout = f"Installation time: {installation_time:.2f} seconds\n"
     stderr = ""
-    return stdout
+
     try:
         with sync_playwright() as p:
+            return("works?")
             try:
-                browser = p.webkit.launch()
+                browser = p.chromium.launch()
                 page = browser.new_page()
                 page.goto(url)
                 content = page.content()
@@ -42,4 +45,4 @@ def test_playwright(url: str):
     except Exception as e:
         stderr = f"Error running Playwright: {str(e)}"
 
-    # Ensure to return the o
+    return stdout, stderr
