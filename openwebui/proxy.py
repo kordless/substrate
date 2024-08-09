@@ -197,11 +197,12 @@ async def chat():
             return Response(sse_stream(query, model), mimetype='application/x-ndjson')
         else:
             logging.info("Starting non-streaming response")
-            return await non_streaming_response(query, model)
+            return Response(non_streaming_response(query, model), mimetype='application/x-ndjson')
 
     except Exception as e:
         logging.error(f"Error in chat endpoint: {str(e)}", exc_info=True)
         return jsonify({'error': 'Internal Server Error'}), 500
+
 
 async def non_streaming_response(query, model):
     try:
@@ -221,7 +222,8 @@ async def non_streaming_response(query, model):
                 logging.debug(f"JSON content: {content}")
             else:
                 logging.error(f"Unable to find JSON content in api_response: {api_response}")
-                return jsonify({'error': 'No JSON content found in API response'}), 500
+                yield json.dumps({'error': 'No JSON content found in API response'}).encode('utf-8') + b'\n'
+                return
 
             # Extract text from content
             if isinstance(content, dict):
@@ -233,22 +235,38 @@ async def non_streaming_response(query, model):
                     text = None
             else:
                 logging.error(f"Unexpected content type: {type(content)}")
-                return jsonify({'error': 'Unexpected content type in API response'}), 500
+                yield json.dumps({'error': 'Unexpected content type in API response'}).encode('utf-8') + b'\n'
+                return
 
         if text is None:
             logging.error(f"No text content found in response: {content}")
-            return jsonify({'error': 'No text content found in API response'}), 500
+            yield json.dumps({'error': 'No text content found in API response'}).encode('utf-8') + b'\n'
+            return
 
         # Calculate durations
         total_duration = int((end_time - start_time) * 1e9)  # Convert to nanoseconds
         
-        # Create Ollama-compatible response
-        result = {
+        # Create Ollama-compatible response in chunks
+        for i in range(0, len(text), 50):  # Chunk the response by 50 characters
+            chunk = text[i:i + 50]
+            result = {
+                "model": f"Substrate:{model}",
+                "created_at": datetime.utcnow().isoformat() + 'Z',
+                "message": {
+                    "role": "assistant",
+                    "content": chunk
+                },
+                "done": False
+            }
+            yield json.dumps(result).encode('utf-8') + b'\n'
+
+        # Send the final response
+        final_result = {
             "model": f"Substrate:{model}",
             "created_at": datetime.utcnow().isoformat() + 'Z',
             "message": {
                 "role": "assistant",
-                "content": text
+                "content": ""  # Final empty content
             },
             "done": True,
             "total_duration": total_duration,
@@ -260,11 +278,7 @@ async def non_streaming_response(query, model):
             "done_reason": "stop"
         }
         
-        logging.debug(f"Formatted result: {result}")
-        
-        # Return the result as a single JSON object with the correct Content-Type
-        return Response(json.dumps(result) + '\n', 
-                        mimetype='application/x-ndjson')
+        yield json.dumps(final_result).encode('utf-8') + b'\n'
 
     except Exception as e:
         logging.error(f"Error in non-streaming response: {str(e)}", exc_info=True)
@@ -272,8 +286,9 @@ async def non_streaming_response(query, model):
             "error": "Internal Server Error",
             "done": True
         }
-        return Response(json.dumps(error_response) + '\n', 
-                        mimetype='application/x-ndjson')
+        yield json.dumps(error_response).encode('utf-8') + b'\n'
+
+
     
 @app.route('/api/tags', methods=['GET'])
 async def list_local_models():
