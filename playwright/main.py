@@ -1,9 +1,12 @@
 import os
-import sys
 import json
 import importlib.util
-import inspect
-from substrate import Substrate, RunPython
+import logging
+from substrate import Substrate, RunPython, sb
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 CONFIG_DIR = os.path.expanduser('~/.config/substrate/')
 CONFIG_FILE = os.path.join(CONFIG_DIR, 'config.json')
@@ -61,69 +64,45 @@ def load_functions_from_directory(directory):
 
 # Load all functions from the 'functions' directory
 available_functions = load_functions_from_directory(FUNCTIONS_DIR)
+print(available_functions)
 
-# Print available functions with numbers
-print("Available functions:")
-function_names = list(available_functions.keys())
-for index, func_name in enumerate(function_names, start=1):
-    print(f"{index}. {func_name}")
+# Get the function references for the chain
+take_screenshot_function = available_functions['browser.take_screenshot']['function']
 
-# Ask user to enter a number
-while True:
-    try:
-        selection = int(input("Enter the number of the function you want to run: "))
-        if 1 <= selection <= len(function_names):
-            function_to_run = function_names[selection - 1]
-            break
-        else:
-            print("Invalid selection. Please enter a number from the list.")
-    except ValueError:
-        print("Invalid input. Please enter a number.")
+# Set up the chain of operations, but don't execute it yet
+screenshot = RunPython(
+    function=take_screenshot_function,
+    kwargs={
+        'url': 'https://news.ycombinator.com/news'
+    },
+    pip_install=available_functions['browser.take_screenshot']['pip_install_strings'],
+)
 
-print(f"You selected: {function_to_run}")
+# Run the entire chain by executing the last node
+"""
+format_res = substrate.run(screenshot)
+print(dir(format_res))
+format_out = format_res.get(screenshot)
+print(dir(format_out))
+print(format_out.json)
+"""
 
-# To actually run the function:
-if function_to_run in available_functions:
-    function_info = available_functions[function_to_run]
-    function = function_info['function']
-    pip_install_strings = function_info['pip_install_strings']
-    
-    # Get the function's parameters
-    params = inspect.signature(function).parameters
-    
-    # Prompt for each parameter
-    kwargs = {}
-    for param_name, param in params.items():
-        # Check if the parameter has a default value
-        if param.default is param.empty:
-            # No default value, we need to prompt
-            value = input(f"Enter value for '{param_name}': ")
-        else:
-            # There's a default value, make it optional
-            value = input(f"Enter value for '{param_name}' (default: {param.default}): ")
-            if not value:  # If user doesn't input anything, use the default
-                value = param.default
-        
-        # Try to evaluate the input as a Python expression
-        try:
-            kwargs[param_name] = eval(value)
-        except:
-            # If eval fails, just use the string value
-            kwargs[param_name] = value
+# Get the function references for the chain
+process_image_with_easyocr = available_functions['ocr.process_image_with_easyocr']['function']
 
-    # Create the RunPython object with the selected function
-    md = RunPython(
-        function=function,
-        kwargs=kwargs,
-        pip_install=pip_install_strings,
-    )
+# Prepare the second function (fb.format) but don't run it yet
+ocr = RunPython(
+    function=process_image_with_easyocr,
+    kwargs={
+        'screenshot_base64': sb.format("{screenshot}", screenshot=screenshot.future.output['screenshot_base64'])
+    },
+    pip_install=available_functions['ocr.process_image_with_easyocr']['pip_install_strings'],
+)
 
-    # Run the function
-    res = substrate.run(md)
-    out = res.get(md)
-    print(dir(out))
-    print(out.stdout)
-    print(out.stderr)
-    print(out.output)  # (output of the selected function)
-else:
-    print(f"Function '{function_to_run}' not found.")
+# Run the entire chain by executing the last node
+format_res = substrate.run(ocr)
+print(dir(format_res))
+print(format_res.json)
+print(format_res.request_id)
+format_out = format_res.get(ocr)
+print(format_out.output)

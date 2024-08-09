@@ -7,14 +7,21 @@ WORKDIR /app
 # Copy the current directory contents into the container at /app
 COPY . /app
 
-# Install system dependencies required for Playwright
+# Install system dependencies required for Playwright and EasyOCR
 RUN apt-get update && apt-get install -y \
     curl \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Playwright and its dependencies
-RUN pip install --no-cache-dir playwright && \
-    playwright install-deps && \
+# Install Python dependencies
+RUN pip install --no-cache-dir playwright easyocr httpx
+
+# Install Playwright browsers and dependencies
+RUN playwright install-deps && \
     playwright install
 
 # Expose port if you want to access any service from this container

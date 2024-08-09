@@ -76,14 +76,16 @@ def run_comparison(selected_models):
             )
         )
 
-        answer = ComputeText(
-            prompt=sb.concat(
+        promptit = sb.concat(
                 "Come up with one detailed, comprehensive, unified response using the best parts of the candidate responses, based on the evaluation. Return only the response, do not reveal the process (do not say candidate response or evaluation).",
                 "\nPROMPT: ", prompt,
                 "\nCANDIDATE RESPONSES:",
                 *[f"\n{i+1}) {ct.future.text}" for i, ct in enumerate(compute_texts)],
                 "\nEVALUATION: ", reasoning.future.text
             )
+        print(promptit)
+        answer = ComputeText(
+            prompt=promptit
         )
 
         res = substrate.run(answer)
