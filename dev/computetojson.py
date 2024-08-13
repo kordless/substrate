@@ -41,10 +41,12 @@ author = ComputeJSON(
 )
 
 # Create the ComputeText node using sb.format for string interpolation
-report = ComputeText(
-    prompt=sb.format("Write a short summary about {name} and make sure to use the following bio: {bio}",
+pips = sb.format("Write a short summary about {name} and make sure to use the following bio: {bio}",
                      name=author.future.json_object["name"],
                      bio=author.future.json_object["bio"])
+print(pips)
+report = ComputeText(
+    prompt=pips
 )
 
 # Note: To execute this computation, you would need to run it with a Substrate instance:
